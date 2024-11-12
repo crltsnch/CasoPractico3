@@ -57,3 +57,38 @@ results = pd.DataFrame({
     'Predicted': test_predictions.flatten()
 })
 results.to_csv("IBEX/resultados/lstm_predictions.csv", index=False)
+
+
+# ==============================
+# Predicciones para los próximos 7 días
+# ==============================
+
+# Número de días a predecir
+prediction_days = 7
+
+# Última secuencia de datos para hacer las predicciones
+last_sequence = X_test[-1].reshape(-1, 1)
+
+# Lista para almacenar las predicciones futuras
+future_predictions = []
+
+# Generar predicciones para los próximos 7 días
+for _ in range(prediction_days):
+    next_pred = model.predict(np.expand_dims(last_sequence, axis=0))
+    future_predictions.append(next_pred[0][0])
+    last_sequence = np.append(last_sequence[1:], next_pred).reshape(-1, 1)
+
+# Invertir el escalado de las predicciones
+future_predictions_unscaled = scaler.inverse_transform(np.array(future_predictions).reshape(-1, 1))
+
+# Crear fechas para las predicciones
+last_date = df_filtered.index[-1]
+future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=prediction_days, freq='D')
+
+# Crear DataFrame de predicciones futuras
+future_predictions_df = pd.DataFrame(data=future_predictions_unscaled, index=future_dates, columns=['Predicted Close'])
+
+# Guardar las predicciones futuras en un archivo CSV
+future_predictions_df.to_csv("IBEX/resultados/lstm_future_predictions.csv")
+
+print("Predicciones para los próximos 7 días guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")
