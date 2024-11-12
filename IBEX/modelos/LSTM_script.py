@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import streamlit as st
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from tensorflow.keras.models import Sequential
@@ -11,12 +12,12 @@ from tensorflow.keras.models import load_model
 file_path = "IBEX/data/ibex_data_clean.csv"
 df = pd.read_csv(file_path)
 
-# Mostrar las primeras filas del DataFrame
-print("Datos originales:")
-print(df.head())
+# Mostrar las primeras filas del DataFrame en Streamlit
+st.write("Datos originales:")
+st.write(df.head())
 
 # Convertir la columna 'Date' a tipo datetime y establecerla como índice
-df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')  # Asegúrate de que el formato coincida
+df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
 df.set_index('Date', inplace=True)
 
 # Filtrar todas las filas donde 'Close' no sea nulo o NaN
@@ -60,7 +61,7 @@ model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y
 
 # Evaluar el modelo
 loss = model.evaluate(X_test, y_test)
-print(f"Test Loss: {loss}")
+st.write(f"Test Loss: {loss}")
 
 # Hacer predicciones con el modelo LSTM
 predicted_prices = model.predict(X_test)
@@ -76,9 +77,9 @@ def calcular_metricas(y_true, y_pred):
 # Calcular las métricas para el conjunto de prueba
 lstm_metrics = calcular_metricas(y_test, predicted_prices)
 
-# Imprimir las métricas
-print("Métricas del Modelo LSTM:", lstm_metrics)
-print(f"MSE: {lstm_metrics[0]}, MAE: {lstm_metrics[1]}, RMSE: {lstm_metrics[2]}, R²: {lstm_metrics[3]}")
+# Mostrar las métricas en Streamlit
+st.write("Métricas del Modelo LSTM:")
+st.write(f"MSE: {lstm_metrics[0]}, MAE: {lstm_metrics[1]}, RMSE: {lstm_metrics[2]}, R²: {lstm_metrics[3]}")
 
 # Escalado inverso
 predicted_prices_unscaled = scaler.inverse_transform(predicted_prices.reshape(-1, 1))
@@ -95,37 +96,40 @@ lower_bound = predicted_prices_unscaled - confidence_interval
 # Extraer las fechas para el conjunto de prueba
 test_dates = df_filtered.index[-len(y_test_unscaled):]
 
-# Graficar los resultados con los intervalos de confianza
-plt.figure(figsize=(12, 6))
-plt.plot(test_dates, y_test_unscaled, label='Valores Reales', color='blue')
-plt.plot(test_dates, predicted_prices_unscaled, label=f'Predicciones LSTM - RMSE: {lstm_metrics[2]:.2f}', linestyle='--', color='red')
-plt.fill_between(test_dates, lower_bound.flatten(), upper_bound.flatten(), color='gray', alpha=0.3, label='Intervalo de Confianza (70%)')
-plt.xlabel('Fecha')
-plt.ylabel('Precio de Cierre')
-plt.title('Predicciones del Modelo LSTM con Intervalo de Confianza del 70%')
-plt.legend()
-plt.show()
+# Graficar los resultados con los intervalos de confianza en Streamlit
+st.write('### Predicciones LSTM con Intervalo de Confianza del 70%')
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(test_dates, y_test_unscaled, label='Valores Reales', color='blue')
+ax.plot(test_dates, predicted_prices_unscaled, label=f'Predicciones LSTM - RMSE: {lstm_metrics[2]:.2f}', linestyle='--', color='red')
+ax.fill_between(test_dates, lower_bound.flatten(), upper_bound.flatten(), color='gray', alpha=0.3, label='Intervalo de Confianza (70%)')
+ax.set_xlabel('Fecha')
+ax.set_ylabel('Precio de Cierre')
+ax.set_title('Predicciones del Modelo LSTM con Intervalo de Confianza del 70%')
+ax.legend()
+st.pyplot(fig)
 
-# Graficar los residuos
+# Graficar los residuos en Streamlit
 lstm_residuals = y_test_unscaled - predicted_prices_unscaled
-plt.figure(figsize=(12, 6))
-plt.plot(lstm_residuals, label='LSTM Residuos', color='red')
-plt.axhline(y=0, color='black', linestyle='--', linewidth=0.5)
-plt.xlabel('Días')
-plt.ylabel('Residuos')
-plt.title('Residuos del Modelo LSTM')
-plt.legend()
-plt.show()
+st.write('### Residuos del Modelo LSTM')
+fig2, ax2 = plt.subplots(figsize=(12, 6))
+ax2.plot(lstm_residuals, label='LSTM Residuos', color='red')
+ax2.axhline(y=0, color='black', linestyle='--', linewidth=0.5)
+ax2.set_xlabel('Días')
+ax2.set_ylabel('Residuos')
+ax2.set_title('Residuos del Modelo LSTM')
+ax2.legend()
+st.pyplot(fig2)
 
-# Graficar histograma de los residuos
-plt.figure(figsize=(12, 6))
-plt.hist(lstm_residuals, bins=20, color='red', alpha=0.5, label='LSTM Residuos')
-plt.xlabel('Residuos')
-plt.ylabel('Frecuencia')
-plt.title('Histograma de Residuos del Modelo LSTM')
-plt.legend()
-plt.grid(True)
-plt.show()
+# Graficar histograma de los residuos en Streamlit
+st.write('### Histograma de Residuos del Modelo LSTM')
+fig3, ax3 = plt.subplots(figsize=(12, 6))
+ax3.hist(lstm_residuals, bins=20, color='red', alpha=0.5, label='LSTM Residuos')
+ax3.set_xlabel('Residuos')
+ax3.set_ylabel('Frecuencia')
+ax3.set_title('Histograma de Residuos del Modelo LSTM')
+ax3.legend()
+ax3.grid(True)
+st.pyplot(fig3)
 
 # Crear un DataFrame para los residuos
 residuals_df = pd.DataFrame({
@@ -133,20 +137,21 @@ residuals_df = pd.DataFrame({
     'LSTM Residuos': lstm_residuals.flatten()
 })
 
-# Mostrar la tabla de resultados de residuos
-print(residuals_df)
+# Mostrar la tabla de resultados de residuos en Streamlit
+st.write('### Tabla de Residuos del Modelo LSTM')
+st.write(residuals_df)
 
 # Calcular y mostrar el coeficiente R² en entrenamiento (opcional)
 train_predictions = model.predict(X_train)
 train_predictions_unscaled = scaler.inverse_transform(train_predictions)
 r2_train = r2_score(scaler.inverse_transform(y_train), train_predictions_unscaled)
-print(f'Coeficiente de determinación R² en entrenamiento: {r2_train:.2f}')
-print(f'Coeficiente de determinación R² en prueba: {lstm_metrics[3]:.2f}')
+st.write(f'Coeficiente de determinación R² en entrenamiento: {r2_train:.2f}')
+st.write(f'Coeficiente de determinación R² en prueba: {lstm_metrics[3]:.2f}')
 
 # Guardar modelo
 save_path = "modelo_lstm_ibex.h5"
 model.save(save_path)
-print(f"Modelo guardado en: {save_path}")
+st.write(f"Modelo guardado en: {save_path}")
 
 # Cargar el modelo entrenado
 model = load_model("modelo_lstm_ibex.h5")
@@ -179,14 +184,15 @@ future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=pre
 # Crear un DataFrame para las predicciones futuras
 predictions_df = pd.DataFrame(data=predictions_unscaled, index=future_dates, columns=['Predicted Close'])
 
-# Graficar los resultados
-plt.figure(figsize=(12, 6))
-plt.plot(df['Close'], label='Datos Originales', color='blue')
-plt.axvline(x=last_date, color='gray', linestyle='--', label='Inicio de Predicciones')
-plt.plot(predictions_df, label='Predicciones LSTM (30 días)', color='red', linestyle='--')
-plt.xlabel('Fecha')
-plt.ylabel('Precio de Cierre')
-plt.title('Predicciones del Modelo LSTM para el Próximo Mes')
-plt.legend()
-plt.show()
+# Graficar los resultados de las predicciones futuras
+st.write('### Predicciones LSTM para el Próximo Mes')
+fig4, ax4 = plt.subplots(figsize=(12, 6))
+ax4.plot(df['Close'], label='Datos Originales', color='blue')
+ax4.axvline(x=last_date, color='gray', linestyle='--', label='Inicio de Predicciones')
+ax4.plot(predictions_df, label='Predicciones LSTM (30 días)', color='red', linestyle='--')
+ax4.set_xlabel('Fecha')
+ax4.set_ylabel('Precio de Cierre')
+ax4.set_title('Predicciones del Modelo LSTM para el Próximo Mes')
+ax4.legend()
+st.pyplot(fig4)
 
