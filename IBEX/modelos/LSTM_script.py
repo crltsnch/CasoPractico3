@@ -1,11 +1,14 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.models import load_model
 
 # Cargar los datos desde el archivo CSV
-file_path = "../data/ibex_data_clean.csv"
+file_path = "IBEX/data/ibex_data_clean.csv"
 df = pd.read_csv(file_path)
 
 # Mostrar las primeras filas del DataFrame
@@ -34,7 +37,7 @@ def create_sequences(data, seq_length):
         y.append(data[i + seq_length])
     return np.array(X), np.array(y)
 
-# Definir la longitud de la secuencias
+# Definir la longitud de la secuencia
 seq_length = 365
 X, y = create_sequences(scaled_data, seq_length)
 
@@ -58,11 +61,6 @@ model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y
 # Evaluar el modelo
 loss = model.evaluate(X_test, y_test)
 print(f"Test Loss: {loss}")
-
-import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import numpy as np
-import pandas as pd
 
 # Hacer predicciones con el modelo LSTM
 predicted_prices = model.predict(X_test)
@@ -108,7 +106,6 @@ plt.title('Predicciones del Modelo LSTM con Intervalo de Confianza del 70%')
 plt.legend()
 plt.show()
 
-
 # Graficar los residuos
 lstm_residuals = y_test_unscaled - predicted_prices_unscaled
 plt.figure(figsize=(12, 6))
@@ -146,21 +143,13 @@ r2_train = r2_score(scaler.inverse_transform(y_train), train_predictions_unscale
 print(f'Coeficiente de determinación R² en entrenamiento: {r2_train:.2f}')
 print(f'Coeficiente de determinación R² en prueba: {lstm_metrics[3]:.2f}')
 
-
-
-#Guardar modelo
+# Guardar modelo
 save_path = "modelo_lstm_ibex.h5"
 model.save(save_path)
 print(f"Modelo guardado en: {save_path}")
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from tensorflow.keras.models import load_model
-
 # Cargar el modelo entrenado
-load_path = "modelo_lstm_ibex.h5"
-model = load_model(load_path)
+model = load_model("modelo_lstm_ibex.h5")
 
 # Número de días a predecir (un mes completo)
 prediction_days = 30
@@ -201,69 +190,3 @@ plt.title('Predicciones del Modelo LSTM para el Próximo Mes')
 plt.legend()
 plt.show()
 
-
-
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from tensorflow.keras.models import load_model
-
-# Cargar el modelo LSTM
-load_path = "modelo_lstm_ibex.h5"
-model = load_model(load_path)
-
-# Número de días a predecir
-prediction_days = 7
-
-# Lista para almacenar las predicciones
-predictions = []
-
-# Última secuencia para hacer las predicciones
-last_sequence = X_test[-1].reshape(-1, 1)
-
-# Generar predicciones
-for _ in range(prediction_days):
-    next_pred = model.predict(np.expand_dims(last_sequence, axis=0))
-    predictions.append(next_pred[0][0])
-    last_sequence = np.append(last_sequence[1:], next_pred).reshape(-1, 1)
-
-# Invertir el escalado de las predicciones
-predictions_unscaled = scaler.inverse_transform(np.array(predictions).reshape(-1, 1))
-
-# Crear fechas para las predicciones
-last_date = df.index[-1]
-future_dates = pd.date_range(start=df.index[-1] + pd.Timedelta(days=1), periods=prediction_days, freq='D')
-
-# DataFrame de predicciones
-predictions_df = pd.DataFrame(data=predictions_unscaled, index=future_dates, columns=['Predicted Close'])
-
-# Crear una gráfica combinada de los últimos datos y las predicciones
-plt.figure(figsize=(14, 7))
-
-# Mostrar los últimos 6 meses de datos
-last_6_months = df['Close'].iloc[-180:]  # Últimos 180 días (aproximadamente 6 meses)
-plt.plot(last_6_months, label='Datos Originales (Últimos 6 Meses)', color='blue')
-
-# Añadir las predicciones
-plt.plot(predictions_df, label='Predicciones LSTM (30 días)', color='red', linestyle='--')
-
-# Líneas verticales para marcar el inicio de las predicciones
-plt.axvline(x=last_date, color='gray', linestyle='--', label='Inicio de Predicciones')
-
-# Añadir etiquetas y título
-plt.xlabel('Fecha')
-plt.ylabel('Precio de Cierre')
-plt.title('Predicciones del Modelo LSTM con Datos Recientes')
-plt.legend()
-plt.show()
-
-# Gráfica de zoom en las predicciones
-plt.figure(figsize=(14, 7))
-plt.plot(df['Close'].iloc[-30:], label='Datos Originales (Últimos 30 Días)', color='blue')
-plt.plot(predictions_df, label='Predicciones LSTM (30 días)', color='red', linestyle='--')
-plt.axvline(x=last_date, color='gray', linestyle='--', label='Inicio de Predicciones')
-plt.xlabel('Fecha')
-plt.ylabel('Precio de Cierre')
-plt.title('Zoom en las Predicciones del Modelo LSTM')
-plt.legend()
-plt.show()
