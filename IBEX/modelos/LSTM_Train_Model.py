@@ -60,10 +60,39 @@ results = pd.DataFrame({
 results.to_csv("IBEX/resultados/lstm_predictions.csv", index=False)
 
 
+# Calcular las métricas de evaluación
+# Error cuadrático medio (MSE)
+mse_train = mean_squared_error(y_train_unscaled, train_predictions)
+mse_test = mean_squared_error(y_test_unscaled, test_predictions)
+
+# Coeficiente de determinación R²
+r2_train = r2_score(y_train_unscaled, train_predictions)
+r2_test = r2_score(y_test_unscaled, test_predictions)
+
+# Residuo medio absoluto (MAE)
+mae_train = mean_absolute_error(y_train_unscaled, train_predictions)
+mae_test = mean_absolute_error(y_test_unscaled, test_predictions)
+
+# Crear DataFrame con las métricas
+metrics = {
+    'Metric': ['MSE Train', 'MSE Test', 'R2 Train', 'R2 Test', 'MAE Train', 'MAE Test'],
+    'Value': [mse_train, mse_test, r2_train, r2_test, mae_train, mae_test]
+}
+
+metrics_df = pd.DataFrame(metrics)
+
+# Guardar las métricas en un archivo CSV
+metrics_df.to_csv("IBEX/resultados/model_metrics.csv", index=False)
+
+# Imprimir el DataFrame con las métricas
+print(metrics_df)
+
+
+
+
 # ==============================
 # Predicciones para los próximos 7 días
 # ==============================
-
 
 
 # Obtener los días festivos de España (opcional)
@@ -140,3 +169,5 @@ future_predictions_df.to_csv("IBEX/resultados/lstm_future_predictions.csv")
 print(future_predictions_df)
 
 print("Predicciones para los próximos 5 días hábiles guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")
+
+
