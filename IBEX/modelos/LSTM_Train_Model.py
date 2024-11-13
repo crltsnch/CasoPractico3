@@ -4,6 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+import holidays
 
 # Cargar los datos
 file_path = "IBEX/data/ibex_data_clean.csv"
@@ -63,28 +64,48 @@ results.to_csv("IBEX/resultados/lstm_predictions.csv", index=False)
 # Predicciones para los próximos 7 días
 # ==============================
 
+
+
+# Obtener los días festivos de España (opcional)
+es_holidays = holidays.Spain(years=range(2012, 2025))
+
+
 # Número de días a predecir
 prediction_days = 7
 
 # Última secuencia de datos para hacer las predicciones
 last_sequence = X_test[-1].reshape(-1, 1)
 
-# Lista para almacenar las predicciones futuras
+# Lista para almacenar las predicciones futuras y fechas
 future_predictions = []
+future_dates = []
 
-# Generar predicciones para los próximos días
-for _ in range(prediction_days):
+# Obtener la última fecha de tu DataFrame
+last_date = df_filtered.index[-1]
+
+# Generar predicciones para los próximos 7 días hábiles
+while len(future_predictions) < prediction_days:
+    # Avanzar un día
+    last_date += pd.Timedelta(days=1)
+
+    # Saltar si es fin de semana
+    if last_date.weekday() in [5, 6]:  # 5 = Sábado, 6 = Domingo
+        continue
+
+    # Saltar si es un día festivo
+    if last_date in es_holidays:
+        continue
+
+    # Hacer la predicción
     next_pred = model.predict(np.expand_dims(last_sequence, axis=0))
     future_predictions.append(next_pred[0][0])
+    future_dates.append(last_date)
+
     # Actualizar la secuencia con la nueva predicción
     last_sequence = np.append(last_sequence[1:], next_pred).reshape(-1, 1)
 
 # Invertir el escalado de las predicciones
 future_predictions_unscaled = scaler.inverse_transform(np.array(future_predictions).reshape(-1, 1))
-
-# Crear fechas para las predicciones
-last_date = df_filtered.index[-1]
-future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=prediction_days, freq='D')
 
 # Crear DataFrame de predicciones futuras
 future_predictions_df = pd.DataFrame(data=future_predictions_unscaled, index=future_dates, columns=['Predicted Close'])
@@ -118,5 +139,4 @@ future_predictions_df.to_csv("IBEX/resultados/lstm_future_predictions.csv")
 # Imprimir el DataFrame con las nuevas columnas
 print(future_predictions_df)
 
-print("Predicciones para los próximos 7 días guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")
-
+print("Predicciones para los próximos 7 días hábiles guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")

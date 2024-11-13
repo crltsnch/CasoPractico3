@@ -127,17 +127,21 @@ st.pyplot(fig5)
 
 
 
-# Convertir la columna de fecha para que solo contenga la fecha (sin la hora)
-future_predictions['Fecha'] = future_predictions.index.strftime('%Y-%m-%d')  # Esto extrae solo la fecha en formato 'YYYY-MM-DD'
+
+future_predictions['Fecha'] = future_predictions.index.strftime('%d %b %Y').str.lower()
 
 # Restablecer el índice y eliminar la columna del índice
 future_predictions = future_predictions.reset_index(drop=True)
 
-# Renombrar la columna para mayor claridad (si es necesario)
-future_predictions = future_predictions.rename(columns={'Predicted Close': 'Predicción de Cierre'})
+# Renombrar las columnas para mayor claridad
+future_predictions = future_predictions.rename(columns={
+    'Predicted Close': 'Predicción de Cierre',
+    'Price Change': 'Diferencia',
+    'Percentage Change': 'Diferencia en Porcentaje'
+})
 
-# Reordenar las columnas para que la 'Fecha' esté primero
-future_predictions = future_predictions[['Fecha', 'Predicción de Cierre']]
+
+future_predictions = future_predictions[['Fecha', 'Predicción de Cierre', 'Diferencia', 'Diferencia en Porcentaje']]
 
 # Mostrar la tabla sin la columna de índice
 st.dataframe(future_predictions)
