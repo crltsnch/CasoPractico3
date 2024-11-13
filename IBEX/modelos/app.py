@@ -62,7 +62,7 @@ future_predictions.index = pd.to_datetime(future_predictions.index)
 # Verificar longitud de los datos reales
 n_rows = len(results)
 
-# Graficar las predicciones futuras para los últimos 3 meses
+'''# Graficar las predicciones futuras para los últimos 3 meses
 fig4, ax4 = plt.subplots(figsize=(14, 7))
 
 if n_rows < 90:
@@ -93,7 +93,7 @@ ax4.set_title('Predicciones Futuras del Modelo LSTM para los Próximos 7 Días')
 ax4.legend()
 
 # Mostrar el gráfico en Streamlit
-st.pyplot(fig4)
+st.pyplot(fig4)'''
 
 # Filtrar los últimos 30 días de los datos reales y las predicciones
 last_30_days_data = results['Real'].iloc[-30:]
@@ -106,7 +106,7 @@ fig5, ax5 = plt.subplots(figsize=(14, 7))
 ax5.plot(results['Date'].iloc[-30:], last_30_days_data, label='Datos Originales (Últimos 30 Días)', color='blue')
 
 # Predicciones LSTM (últimos 30 días)
-ax5.plot(future_predictions.index[:30], last_30_days_predictions, label='Predicciones LSTM (Próximos 7 Días)', color='red', linestyle='--')
+ax5.plot(future_predictions.index[:30], last_30_days_predictions, label='Predicciones LSTM (Próximos 5 Días)', color='red', linestyle='--')
 
 # Conectar el último dato real con el primer dato predicho con una línea discontinua roja
 last_real_date = results['Date'].iloc[-1]

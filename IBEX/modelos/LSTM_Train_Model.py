@@ -71,7 +71,7 @@ es_holidays = holidays.Spain(years=range(2012, 2025))
 
 
 # Número de días a predecir
-prediction_days = 7
+prediction_days = 5
 
 # Última secuencia de datos para hacer las predicciones
 last_sequence = X_test[-1].reshape(-1, 1)
@@ -139,4 +139,4 @@ future_predictions_df.to_csv("IBEX/resultados/lstm_future_predictions.csv")
 # Imprimir el DataFrame con las nuevas columnas
 print(future_predictions_df)
 
-print("Predicciones para los próximos 7 días hábiles guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")
+print("Predicciones para los próximos 5 días hábiles guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")
