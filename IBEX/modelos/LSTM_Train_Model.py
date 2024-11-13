@@ -72,10 +72,11 @@ last_sequence = X_test[-1].reshape(-1, 1)
 # Lista para almacenar las predicciones futuras
 future_predictions = []
 
-# Generar predicciones para los próximos 7 días
+# Generar predicciones para los próximos días
 for _ in range(prediction_days):
     next_pred = model.predict(np.expand_dims(last_sequence, axis=0))
     future_predictions.append(next_pred[0][0])
+    # Actualizar la secuencia con la nueva predicción
     last_sequence = np.append(last_sequence[1:], next_pred).reshape(-1, 1)
 
 # Invertir el escalado de las predicciones
@@ -88,7 +89,34 @@ future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=pre
 # Crear DataFrame de predicciones futuras
 future_predictions_df = pd.DataFrame(data=future_predictions_unscaled, index=future_dates, columns=['Predicted Close'])
 
+# Inicializar las columnas 'Price Change' y 'Percentage Change'
+future_predictions_df['Price Change'] = 0.0
+future_predictions_df['Percentage Change'] = 0.0
+
+# Último valor real del precio de cierre
+first_real_value = df_filtered['Close'].iloc[-1]
+print(f"Último valor real: {first_real_value}")
+
+# Calcular 'Price Change' y 'Percentage Change' para la primera predicción
+future_predictions_df.at[future_dates[0], 'Price Change'] = future_predictions_df.at[future_dates[0], 'Predicted Close'] - first_real_value
+future_predictions_df.at[future_dates[0], 'Percentage Change'] = (future_predictions_df.at[future_dates[0], 'Price Change'] / first_real_value) * 100
+
+# Calcular 'Price Change' y 'Percentage Change' para los días siguientes
+for i in range(1, len(future_predictions_df)):
+    current_close = future_predictions_df['Predicted Close'].iloc[i]
+    previous_close = future_predictions_df['Predicted Close'].iloc[i - 1]
+    
+    # Cambio de precio respecto al día anterior
+    future_predictions_df.at[future_dates[i], 'Price Change'] = current_close - previous_close
+    
+    # Porcentaje de cambio respecto al día anterior
+    future_predictions_df.at[future_dates[i], 'Percentage Change'] = (future_predictions_df.at[future_dates[i], 'Price Change'] / previous_close) * 100
+
 # Guardar las predicciones futuras en un archivo CSV
 future_predictions_df.to_csv("IBEX/resultados/lstm_future_predictions.csv")
 
+# Imprimir el DataFrame con las nuevas columnas
+print(future_predictions_df)
+
 print("Predicciones para los próximos 7 días guardadas en 'IBEX/resultados/lstm_future_predictions.csv'")
+
