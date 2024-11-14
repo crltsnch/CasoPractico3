@@ -6,18 +6,29 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 import holidays
 
-# Cargar los datos
+# Cargar los datos desde el archivo CSV
 file_path = "IBEX/data/ibex_data_clean.csv"
 df = pd.read_csv(file_path)
-df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
+
+# Mostrar las primeras filas del DataFrame
+print("Datos originales:")
+print(df.head())
+
+# Convertir la columna 'Date' a tipo datetime y establecerla como índice
+df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')  # Asegúrate de que el formato coincida
 df.set_index('Date', inplace=True)
+
+# Filtrar todas las filas donde 'Close' no sea nulo o NaN
 df_filtered = df.dropna(subset=['Close'])
 
-# Escalar los datos
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(df_filtered[['Close']])
+# Seleccionar la columna objetivo
+data = df_filtered[['Close']]
 
-# Crear secuencias de datos
+# Escalar los datos entre 0 y 1
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaled_data = scaler.fit_transform(data)
+
+# Crear secuencias de datos para entrenamiento
 def create_sequences(data, seq_length):
     X, y = [], []
     for i in range(len(data) - seq_length):
@@ -25,69 +36,80 @@ def create_sequences(data, seq_length):
         y.append(data[i + seq_length])
     return np.array(X), np.array(y)
 
+# Definir la longitud de la secuencias
 seq_length = 365
 X, y = create_sequences(scaled_data, seq_length)
 
-# Dividir los datos
+# Dividir los datos en entrenamiento y prueba (80% - 20%)
 train_size = int(len(X) * 0.8)
 X_train, X_test = X[:train_size], X[train_size:]
 y_train, y_test = y[:train_size], y[train_size:]
 
-# Construir y entrenar el modelo
-model = Sequential([
-    LSTM(128, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])),
-    LSTM(64),
-    Dense(1)
-])
+# Construir el modelo LSTM
+model = Sequential()
+model.add(LSTM(128, return_sequences=True, input_shape=(X_train.shape[1], X_train.shape[2])))
+model.add(LSTM(64))
+model.add(Dense(1))
+
+# Compilar el modelo
 model.compile(optimizer='adam', loss='mean_squared_error')
+
+# Entrenar el modelo
 model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test))
+
+# Evaluar el modelo
+loss = model.evaluate(X_test, y_test)
+print(f"Test Loss: {loss}")
 
 # Guardar el modelo
 model.save("IBEX/resultados/modelo_lstm_ibex.keras")
 
-# Hacer predicciones y escalado inverso
-train_predictions = scaler.inverse_transform(model.predict(X_train))
-test_predictions = scaler.inverse_transform(model.predict(X_test))
-y_train_unscaled = scaler.inverse_transform(y_train.reshape(-1, 1))
+
+## Hacer predicciones con el modelo LSTM
+predicted_prices = model.predict(X_test)
+
+# Función para calcular métricas de evaluación
+def calcular_metricas(y_true, y_pred):
+    mse = mean_squared_error(y_true, y_pred)
+    mae = mean_absolute_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(y_true, y_pred)
+    return mse, mae, rmse, r2
+
+# Calcular las métricas para el conjunto de prueba
+lstm_metrics = calcular_metricas(y_test, predicted_prices)
+
+# Imprimir las métricas
+print("Métricas del Modelo LSTM:", lstm_metrics)
+print(f"MSE: {lstm_metrics[0]}, MAE: {lstm_metrics[1]}, RMSE: {lstm_metrics[2]}, R²: {lstm_metrics[3]}")
+
+# Escalado inverso
+predicted_prices_unscaled = scaler.inverse_transform(predicted_prices.reshape(-1, 1))
 y_test_unscaled = scaler.inverse_transform(y_test.reshape(-1, 1))
 
-# Guardar predicciones y datos en un archivo CSV
+# Calcular los residuos
+residuals = y_test_unscaled.flatten() - predicted_prices_unscaled.flatten()
+
+# Desviación estándar de los residuos
+std_residuals = np.std(residuals)
+
+# Intervalo de confianza del 70% (±1 desviación estándar)
+z_value = 1.04  # Valor crítico para un intervalo de confianza del 70%
+confidence_interval_upper = predicted_prices_unscaled.flatten() + z_value * std_residuals
+confidence_interval_lower = predicted_prices_unscaled.flatten() - z_value * std_residuals
+
+# Guardar los resultados en un DataFrame
 results = pd.DataFrame({
-    'Date': df_filtered.index[-len(y_test_unscaled):],
+    'Date': df_filtered.index[-len(y_test_unscaled):],  # Fecha correspondiente a las predicciones
     'Real': y_test_unscaled.flatten(),
-    'Predicted': test_predictions.flatten()
+    'Predicted': predicted_prices_unscaled.flatten(),
+    'Residuals': residuals,
+    'Confidence Interval Upper': confidence_interval_upper,
+    'Confidence Interval Lower': confidence_interval_lower
 })
+
+# Guardar el DataFrame en un archivo CSV
 results.to_csv("IBEX/resultados/lstm_predictions.csv", index=False)
-
-
-# Calcular las métricas de evaluación
-# Error cuadrático medio (MSE)
-mse_train = mean_squared_error(y_train_unscaled, train_predictions)
-mse_test = mean_squared_error(y_test_unscaled, test_predictions)
-
-# Coeficiente de determinación R²
-r2_train = r2_score(y_train_unscaled, train_predictions)
-r2_test = r2_score(y_test_unscaled, test_predictions)
-
-# Residuo medio absoluto (MAE)
-mae_train = mean_absolute_error(y_train_unscaled, train_predictions)
-mae_test = mean_absolute_error(y_test_unscaled, test_predictions)
-
-# Crear DataFrame con las métricas
-metrics = {
-    'Metric': ['MSE Train', 'MSE Test', 'R2 Train', 'R2 Test', 'MAE Train', 'MAE Test'],
-    'Value': [mse_train, mse_test, r2_train, r2_test, mae_train, mae_test]
-}
-
-metrics_df = pd.DataFrame(metrics)
-
-# Guardar las métricas en un archivo CSV
-metrics_df.to_csv("IBEX/resultados/model_metrics.csv", index=False)
-
-# Imprimir el DataFrame con las métricas
-print(metrics_df)
-
-
 
 
 # ==============================

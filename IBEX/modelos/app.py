@@ -14,12 +14,6 @@ future_predictions = pd.read_csv(future_predictions_path, index_col=0, parse_dat
 results['Date'] = pd.to_datetime(results['Date'])
 results.index = pd.to_datetime(results.index)
 
-residuals = results['Real'] - results['Predicted']
-std_residuals = residuals.std()
-
-# Crear el intervalo de confianza del 70% (±1 desviación estándar)
-confidence_interval_upper = results['Predicted'] + std_residuals
-confidence_interval_lower = results['Predicted'] - std_residuals
 
 # Función para redondear y eliminar ceros innecesarios
 def format_column(val):
@@ -37,6 +31,7 @@ def color_change(val):
         return f'color: {color}'
     except:
         return ''  # Para valores que no sean numéricos, no aplicar color
+
 
 st.set_page_config(layout="wide")
 
@@ -70,7 +65,6 @@ if page == "Nuestro Análisis":
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        # Segunda columna vacía
         st.write("")
         
 
@@ -79,13 +73,14 @@ if page == "Nuestro Análisis":
         fig, ax = plt.subplots(figsize=(12, 6))
         ax.plot(results['Date'], results['Real'], label='Valores Reales', color='blue')
         ax.plot(results['Date'], results['Predicted'], label='Predicciones LSTM', linestyle='--', color='red')
-        ax.fill_between(results['Date'], confidence_interval_lower, confidence_interval_upper, color='gray', alpha=0.3, label='Intervalo de Confianza 70%')
+        ax.fill_between(results['Date'], results['Confidence Interval Lower'], results['Confidence Interval Upper'], color='gray', alpha=0.3, label='Intervalo de Confianza 70%')
         ax.set_xlabel('Fecha', fontsize=12)  # Ajuste del tamaño de la etiqueta del eje x
         ax.set_ylabel('Precio de Cierre', fontsize=12)  # Ajuste del tamaño de la etiqueta del eje y
         ax.set_title('Comparación de Valores Reales y Predicciones LSTM', fontsize=10)  # Título más grande
         ax.tick_params(axis='x', labelsize=10)  # Tamaño de fuente de los valores del eje x
         ax.tick_params(axis='y', labelsize=10)  # Tamaño de fuente de los valores del eje y
         ax.legend(fontsize=10)  # Tamaño de fuente de la leyenda
+        fig.savefig("IBEX/resultados/predicciones_vs_reales.png", dpi=300)
         st.pyplot(fig)
         
 
@@ -98,7 +93,7 @@ if page == "Nuestro Análisis":
     with col3:
         # Gráfico de Residuos
         fig2, ax2 = plt.subplots(figsize=(10, 6))
-        ax2.plot(results['Date'], residuals, label='Residuos', color='red')
+        ax2.plot(results['Date'], results['Residuals'], label='Residuos', color='red')
         ax2.axhline(y=0, color='black', linestyle='--', linewidth=0.5)
         ax2.set_xlabel('Fecha', fontsize=12)  # Ajuste del tamaño de la etiqueta del eje x
         ax2.set_ylabel('Residuos', fontsize=12)  # Ajuste del tamaño de la etiqueta del eje y
@@ -106,18 +101,20 @@ if page == "Nuestro Análisis":
         ax2.tick_params(axis='x', labelsize=10)  # Tamaño de fuente de los valores del eje x
         ax2.tick_params(axis='y', labelsize=10)  # Tamaño de fuente de los valores del eje y
         ax2.legend(fontsize=10)  # Tamaño de fuente de la leyenda
+        fig2.savefig("IBEX/resultados/residuos.png", dpi=300)
         st.pyplot(fig2)
     
     with col4:
         # Histograma de Residuos
         fig3, ax3 = plt.subplots(figsize=(10, 6))
-        ax3.hist(residuals, bins=20, color='red', alpha=0.5)
+        ax3.hist(results['Residuals'], bins=20, color='red', alpha=0.5)
         ax3.set_xlabel('Residuos', fontsize=10)  # Ajuste del tamaño de la etiqueta del eje x
         ax3.set_ylabel('Frecuencia', fontsize=10)  # Ajuste del tamaño de la etiqueta del eje y
         ax3.set_title('Histograma de Residuos del Modelo LSTM', fontsize=10)  # Título más grande
         ax3.tick_params(axis='x', labelsize=12)  # Tamaño de fuente de los valores del eje x
         ax3.tick_params(axis='y', labelsize=12)  # Tamaño de fuente de los valores del eje y
         ax3.grid(True)
+        fig3.savefig("IBEX/resultados/histograma_residuos.png", dpi=300)
         st.pyplot(fig3)
         
 
@@ -156,7 +153,7 @@ if page == "Predicciones Futuras":
     ax5.set_ylabel('Precio de Cierre')
     ax5.set_title('Predicciones para los Próximos 5 Días')
     ax5.legend()
-
+    fig5.savefig("IBEX/resultados/predicciones.png", dpi=300)
     # Mostrar el gráfico en Streamlit
     st.pyplot(fig5)
 
