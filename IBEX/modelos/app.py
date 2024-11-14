@@ -202,12 +202,12 @@ if page == "Predicciones Futuras":
                 ">
                     <h4 style="margin: 0; color: #424863; font-size: 18px;">{index}</h4>
                     <p style="margin: 5px 0; font-size: 18px;">
-                        <strong>Cierre:</strong> {row['Predicción de Cierre']} €
+                        <strong>Cierre:</strong> {row['Predicción de Cierre']} 
                     </p>
                     <p style="margin: 5px 0; font-size: 18px; color: {cambio_color};">
                         <strong>
                             { '↑' if float(row['Cambio']) > 0 else '↓' }
-                            {row['Cambio']} €
+                            {row['Cambio']}
                             ({row['Cambio Porcentual (%)']}%)
                         </strong>
                     </p>
