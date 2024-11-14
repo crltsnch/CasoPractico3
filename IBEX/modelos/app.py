@@ -46,9 +46,9 @@ st.markdown(
         color: white;
         font-size: 24px;
         font-weight: bold;
-        margin-bottom: 50px;
+        margin-bottom: 60px;
         ">
-        Predicciones IBEX35 con LSTM
+        <h1>Predicciones IBEX35 con LSTM</h1>
     </div>
     """,
     unsafe_allow_html=True
@@ -57,15 +57,57 @@ st.markdown(
 # Menú de navegación superior
 page = st.selectbox("Selecciona una página", ["Predicciones Futuras", "Nuestro Análisis"], index=0)
 
+# Agregar un margen inferior mediante markdown
+st.markdown('<div style="margin-bottom: 30px;"></div>', unsafe_allow_html=True)
+
 # Página 1: Nuestro Análisis
 if page == "Nuestro Análisis":
-    st.write("### Nuestro modelo de Predicción")
-
+    st.markdown(
+    """
+    <h2 style='text-align: center; margin-bottom: 40px;'>
+    ¿Cuánto de bueno es nuestro modelo de predicción?
+    </h2>
+    """, 
+    unsafe_allow_html=True
+)
+    
     # Crear primera fila de gráficos con dos columnas
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.write("")
+        texto_explicativo = """
+        <div style="
+            color: #81a800;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        ">
+           <h5>¿Cómo se ven nuestras predicciones respecto a los valores reales?</h5>
+        </div>
+        <div style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: justify;
+            margin-top: 20px;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        ">
+            <p>
+            Esta gráfica compara los precios reales del IBEX35 (en azul) con las predicciones de nuestro modelo (en rojo, línea discontinua).
+            También incluye un área sombreada en gris que representa un rango donde creemos que los precios deberían estar con un 70% de certeza.
+            Si las líneas roja y azul están muy cerca, significa que nuestro modelo está haciendo predicciones precisas. En este caso, se puede ver
+            que ambas líneas se superponen mucho, lo que indica que nuestro modelo es capaz de seguir de cerca las fluctuaciones reales del mercado,
+            demostrando un entendimiento robusto de las tendencias y comportamientos del IBEX35.
+            </p>
+        </div>
+        """
+        st.markdown(texto_explicativo, unsafe_allow_html=True)
         
 
     with col2:
@@ -91,6 +133,40 @@ if page == "Nuestro Análisis":
     col3, col4 = st.columns([1, 1])
 
     with col3:
+        texto_explicativo = """
+        <div style="
+            color: #81a800;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            margin-top: 30px
+            margin-bottom: 20px;
+        ">
+           <h5>¿Cómo son los errores que podría cometer nuestro modelo?</h5>
+        </div>
+    <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: justify;
+        padding: 20px;
+        margin-top: 20px;
+        font-size: 14px;
+        line-height: 1.6;
+    ">
+        <p>
+        Los residuos son la diferencia entre los valores reales y las predicciones. Esta gráfica muestra esos residuos a lo largo del tiempo, con una línea negra que representa cero (es decir, donde el error sería nulo).
+        La mayoría de los residuos están cerca de la línea de cero, lo que indica que los errores de nuestro modelo son
+        pequeños. Además, no se observa un patrón claro en los residuos, lo que sugiere que el modelo no tiene un
+        sesgo sistemático (no comete los mismos errores una y otra vez).
+        </p>
+    </div>
+    """
+        st.markdown(texto_explicativo, unsafe_allow_html=True)
+    
+    with col4:
         # Gráfico de Residuos
         fig2, ax2 = plt.subplots(figsize=(10, 6))
         ax2.plot(results['Date'], results['Residuals'], label='Residuos', color='red')
@@ -103,8 +179,15 @@ if page == "Nuestro Análisis":
         ax2.legend(fontsize=10)  # Tamaño de fuente de la leyenda
         fig2.savefig("IBEX/resultados/residuos.png", dpi=300)
         st.pyplot(fig2)
-    
-    with col4:
+
+
+
+    # Espacio en blanco entre las filas
+    st.markdown("<br><hr><br>", unsafe_allow_html=True)
+
+    col5, col6 = st.columns([1, 1])
+
+    with col5:
         # Histograma de Residuos
         fig3, ax3 = plt.subplots(figsize=(10, 6))
         ax3.hist(results['Residuals'], bins=20, color='red', alpha=0.5)
@@ -116,13 +199,56 @@ if page == "Nuestro Análisis":
         ax3.grid(True)
         fig3.savefig("IBEX/resultados/histograma_residuos.png", dpi=300)
         st.pyplot(fig3)
+
+
+    with col6:
+        texto_explicativo = """
+        <div style="
+            color: #81a800;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 10px;
+            margin-top: 10px
+        ">
+           <h5>¿Y cúanto de significativos son nuestros errores?</h5>
+        </div>
+        <div style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: justify;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        ">
+            <p>
+            Este gráfico muestra la distribución de los errores en nuestras predicciones. La mayoría de los errores se concentran
+            alrededor de cero, con muy pocos errores extremos. Esto 
+            significa que nuestro modelo es consistentemente preciso, con pocos errores grandes. Esto nos da confianza en la
+            estabilidad y fiabilidad del modelo.
+            </p>
+        </div>
+    """
+        st.markdown(texto_explicativo, unsafe_allow_html=True)
         
 
 
 
 # Página 2: Predicciones Futuras
 if page == "Predicciones Futuras":
-    st.write("### Predicciones para los próximos 5 días del IBEX35")
+    st.markdown(
+    """
+    <h2 style='text-align: center; margin-bottom: 40px;'>
+    Predicciones para los próximos 5 días del IBEX35
+    </h2>
+    """, 
+    unsafe_allow_html=True
+)
+
 
     # Convertir a datetime
     future_predictions.index = pd.to_datetime(future_predictions.index)
